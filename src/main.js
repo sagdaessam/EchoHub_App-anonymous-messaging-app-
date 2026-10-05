@@ -7,6 +7,9 @@ import express from "express" ;
 import authRouter from "./app/auth/auth.route.js";
 import messageRouter from "./app/message/message.route.js";
 import userRouter from "./app/user/user.route.js";
+// import AppError from '../../common/error/error.js';
+import {logger } from './common/logger/logger.js';
+
 
 
 
@@ -26,14 +29,21 @@ app.use("/user",userRouter);
 
 
 app.use((err, req, res ,next) =>{
-    res.json({
+    logger.error(err.message , err);
+    if(err.isOperational === true){
+        return res.status(err.statusCode).json({
         message: err.message,
         success: false,
-        stack: err.stack
-    })
+        // stack: err.stack
+        });
+    }
+    return res.status(500).json({
+        error : 'Something went wrong',
+        success : false
+    });
 })
 
 
 
-app.listen(8888 , () => console.log("Server Starts On Port 8888"));
+app.listen(8888 , () => logger.info("Server Starts On Port 8888"));
 
