@@ -20,6 +20,7 @@ export const loginDTO = z.object({
 });
 
 
+
 export const sendOTPDTO = z.object({
     email: z.email().toLowerCase().trim(),
 });

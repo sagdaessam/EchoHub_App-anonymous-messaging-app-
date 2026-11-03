@@ -1,5 +1,6 @@
 //create transporter
 import nodemailer from "nodemailer";
+import { env } from "../config/env.js";
 
 // establish connection with gmail
 const transporter = nodemailer.createTransport({
@@ -8,8 +9,8 @@ const transporter = nodemailer.createTransport({
         secure: false,
         // service : 'gmail',
         auth : {
-            user : process.env.MAIL_USER,
-            pass : process.env.MAIL_PASS
+            user : env.nodemailer.user,
+            pass : env.nodemailer.pass
         }
 });
 

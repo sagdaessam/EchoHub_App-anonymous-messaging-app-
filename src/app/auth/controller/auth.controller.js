@@ -1,7 +1,9 @@
-import { toMs } from '../../../common/utils/time.js';
+import { toMs } from '../../../pkg/utils/time.js';
 import * as authService from '../service/auth.service.js';
-import { validateBody } from '../../../common/validation/validation.js';
+import { validateBody } from '../../../lib/validation/validation.js';
 import { registerDTO , verifyAccountDTO , loginDTO , sendOTPDTO , resetPasswordDTO } from '../dto/auth.dto.js';
+// import { success } from 'zod';
+import {setCookies} from '../utils/token.js';
 
 
 export async function register(req , res , next){
@@ -37,11 +39,15 @@ export async function login(req , res , next){
     try{
         const data = validateBody(loginDTO , req.body);
         const {email, password} = data;
-        const token = await authService.login(email , password);
-        res.cookie('access_token' , token , {
-            httpOnly: true,
-            maxAge : toMs(1 , 'hours')
-        });
+        const tokens = await authService.login(email , password);
+        if(!tokens){
+            return res.json({
+                message: "2 step verification is enabled, check your email for otp.",
+                success: true,
+            });
+        }
+
+        setCookies(res, tokens.accessToken , tokens.refreshToken);
         res.status(201).json({
             message : "User Login Successfully.",
             success : true,
@@ -65,13 +71,70 @@ export async function sendOtp(req , res , next){
     }
 }
 
+export async function enable2stepVerification(req,res,next){
+    try{
+        // const data = validateBody(enable2stepVerificationDTO , req.body);
+        const{email , code} = req.body;
+        await authService.enable2stepVerification(email, code);
+        res.json({message: "enable 2 step verification successfully . " , success: true});
+
+    }catch(error){
+        next(error);
+    }
+}
+
+export async function verifyCodeToLogin(req,res,next){
+    try{
+        const data = validateBody(verifyAccountDTO , req.body);
+        const{email , code} = data;
+        const{accessToken , refreshToken} = await authService.verifyCodeToLogin(email, code);
+        setCookies(res, accessToken , refreshToken);
+        res.json({message: "login successfully . " , success: true});
+    }catch(error){
+        next(error);
+    }
+}
+
 export async function resetPassword(req , res , next){
     try{
         const data = validateBody(resetPasswordDTO , req.body);
         const {email , code , newPassword} = data;
         await authService.resetPassword(email , code , newPassword);
-        res.sendStatus(204);
+        res.json({
+            message:"password reset successfully",
+            success: true
+        });
     }catch(error){
         next(error);
     }
 }
+
+
+export async function loginWithGoogle(req , res , next){
+    try{
+        const token = await authService.loginWithGoogle(req.body.idToken);
+        res.cookie('access_token' , token , {
+            httpOnly: true,
+            maxAge : toMs(1 , 'hours')
+        });
+        res.json({
+            message : "User Login Successfully.",
+            success : true,       
+        });
+    }catch(error){
+        next(error);
+    }
+}
+
+// export async function refreshTokenFn(req , res , next){
+//     try{
+//         const { accessToken , refreshToken } = await authService.refreshTokenFn(req.cookies.refresh_token);
+//         setCookies(res, accessToken , refreshToken);
+//         res.json({
+//             message : "Token Refreshed Successfully.",
+//             success : true,       
+//         });
+//     }catch(error){
+//         next(error);
+//     }
+// }

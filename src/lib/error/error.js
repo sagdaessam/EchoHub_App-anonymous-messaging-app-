@@ -15,4 +15,3 @@
     }
 }
 
-const err = new AppError('message' , 404);
